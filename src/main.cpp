@@ -1,37 +1,34 @@
+#include "olcPixelGameEngine.h"
 
-#include <iostream>
-
-#include <fmt/format.h>
-#include <docopt.h>
-
-static const char USAGE[] =
-    R"(Naval Fate.
-
-    Usage:
-      naval_fate ship new <name>...
-      naval_fate ship <name> move <x> <y> [--speed=<kn>]
-      naval_fate ship shoot <x> <y>
-      naval_fate mine (set|remove) <x> <y> [--moored | --drifting]
-      naval_fate (-h | --help)
-      naval_fate --version
-
-    Options:
-      -h --help     Show this screen.
-      --version     Show version.
-      --speed=<kn>  Speed in knots [default: 10].
-      --moored      Moored (anchored) mine.
-      --drifting    Drifting mine.
-)";
-
-int main(int argc, const char** argv)
+// Override base class with your custom functionality
+class Example : public olc::PixelGameEngine
 {
-    std::map<std::string, docopt::value> args = docopt::docopt(USAGE, { argv + 1, argv + argc },
-                                                               true,               // show help if requested
-                                                               "Naval Fate 2.0");  // version string
+public:
+    Example()
+    {
+        // Name you application
+        sAppName = "Example";
+    }
 
-    for (auto const& arg : args) { std::cout << arg.first << arg.second << std::endl; }
+public:
+    bool OnUserCreate() override
+    {
+        // Called once at the start, so create things here
+        return true;
+    }
 
-    fmt::print("Hello from {}!\n", "{fmt}");
+    bool OnUserUpdate(float fElapsedTime) override
+    {
+        // Called once per frame, draws random coloured pixels
+        for (int x = 0; x < ScreenWidth(); x++)
+            for (int y = 0; y < ScreenHeight(); y++) Draw(x, y, olc::Pixel(rand() % 256, rand() % 256, rand() % 256));
+        return true;
+    }
+};
 
+int main()
+{
+    Example demo;
+    if (demo.Construct(256, 240, 4, 4)) demo.Start();
     return 0;
 }
