@@ -7,6 +7,7 @@
 
 #include <utility>
 #include <cstdint>
+#include <vector>
 
 namespace procgen
 {
@@ -17,7 +18,7 @@ namespace procgen
         bool use_perlin = true;
 
         // general settings
-        int   world_seed = 1;
+        int   world_seed = 0;
         int   octaves    = 5;
         int   chunk_size = 16;
         int   unit_size  = 1;
@@ -36,11 +37,13 @@ namespace procgen
 
         // "uniform" integer hashing function
         [[nodiscard]] uint32_t hash(uint32_t high, uint32_t low) const noexcept;
-        [[nodiscard]] uint32_t interleave(uint32_t x, uint32_t y) const noexcept;
 
         // random functions
-        [[nodiscard]] float random(int x, int y, int seed = 0) const noexcept;
+        [[nodiscard]] float random(int x, int y, int seed) const noexcept;
         [[nodiscard]] float perlin(int x, int y, int seed_offset = 0) const noexcept;
+
+        // generating functions
+        [[nodiscard]] std::vector<float> generate_chunk(int chunk_x, int chunk_y, int seed_offset = 0);
     };
 
 }  // namespace procgen

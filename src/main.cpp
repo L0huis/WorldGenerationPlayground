@@ -46,8 +46,8 @@ public:
 
         gen.unit_size = 4;
 
-        auto [mid_x, mid_y]
-            = gen.screen_to_world((ScreenWidth() - gen.unit_size) / 2, (ScreenHeight() - gen.unit_size) / 2);
+        auto [mid_x, mid_y] = gen.screen_to_world((ScreenWidth() - gen.unit_size) / 2,
+                                                  (ScreenHeight() - gen.unit_size) / 2);
 
         gen.camera.x = mid_x;
         gen.camera.y = mid_y;
@@ -71,6 +71,78 @@ public:
         auto [from_x, from_y] = gen.screen_to_world(0, 0);
         auto [to_x, to_y]     = gen.screen_to_world(ScreenWidth(), ScreenHeight());
 
+#if 1
+        auto chunk_mask = gen.chunk_size - 1;
+
+        for (auto chunk_y = int(from_y) & ~chunk_mask; chunk_y < to_y; chunk_y += gen.chunk_size)
+        {
+            for (auto chunk_x = int(from_x) & ~chunk_mask; chunk_x < to_x;
+                 chunk_x += gen.chunk_size)
+            {
+                auto vals = gen.generate_chunk(chunk_x, chunk_y);
+                for (int sub_y = 0; sub_y < gen.chunk_size; sub_y++)
+                {
+                    for (int sub_x = 0; sub_x < gen.chunk_size; sub_x++)
+                    {
+                        auto [screen_x, screen_y]
+                            = gen.world_to_screen(chunk_x + sub_x, chunk_y + sub_y);
+                        auto value = vals[sub_y * gen.chunk_size + sub_x];
+
+                        if (!use_threshold)
+                        {
+                            FillRect(screen_x,
+                                     screen_y,
+                                     gen.unit_size,
+                                     gen.unit_size,
+                                     olc::Pixel(value * 255.0f, value * 255.0f, value * 255.0f));
+                        }
+                        else
+                        {
+                            if (value < threshold)
+                            {
+                                FillRect(screen_x,
+                                         screen_y,
+                                         gen.unit_size,
+                                         gen.unit_size,
+                                         olc::BLACK);
+                            }
+                            else
+                            {
+                                FillRect(screen_x,
+                                         screen_y,
+                                         gen.unit_size,
+                                         gen.unit_size,
+                                         olc::WHITE);
+                            }
+                        }
+                    }
+                }
+                auto [chunk_screen_x, chunk_screen_y] = gen.world_to_screen(chunk_x, chunk_y);
+                if (chunk_visualization_current_item == 1)
+                {
+                    FillRect(chunk_screen_x,
+                             chunk_screen_y,
+                             gen.unit_size,
+                             gen.unit_size,
+                             olc::RED);
+                }
+                else if (chunk_visualization_current_item == 2)
+                {
+                    DrawLine(chunk_screen_x,
+                             chunk_screen_y,
+                             chunk_screen_x,
+                             chunk_screen_y + gen.unit_size * gen.chunk_size,
+                             olc::RED);
+                    DrawLine(chunk_screen_x,
+                             chunk_screen_y,
+                             chunk_screen_x + gen.unit_size * gen.chunk_size,
+                             chunk_screen_y,
+                             olc::RED);
+                }
+            }
+        }
+#endif
+#if 0
         for (int y = from_y - 1; y <= to_y; y++)
         {
             for (int x = from_x - 1; x <= to_x; x++)
@@ -118,6 +190,7 @@ public:
                 }
             }
         }
+#endif
 
         return true;
     }
@@ -133,7 +206,10 @@ public:
         //Create and react to your UI here
         ImGui::Begin("Generation");
 
-        ImGui::Combo("Chunk visualization", &chunk_visualization_current_item, chunk_visualization_items, 3);
+        ImGui::Combo("Chunk visualization",
+                     &chunk_visualization_current_item,
+                     chunk_visualization_items,
+                     3);
 
         ImGui::Separator();
 
@@ -144,6 +220,7 @@ public:
 
         ImGui::InputInt("World Seed", &gen.world_seed);
         ImGui::InputInt("Chunk Size", &gen.chunk_size);
+        if (gen.chunk_size < 1) gen.chunk_size = 1;
         if (gen.chunk_size < prev_chunk_size)
         {
             gen.chunk_size  = prev_chunk_size >> 1;
@@ -156,7 +233,8 @@ public:
         }
         ImGui::InputInt("Octaves", &gen.octaves);
         ImGui::InputInt("Unit Size", &gen.unit_size);
-        ImGui::SliderFloat("Bias", &gen.bias, 0.1f, 4.0f);
+        if (gen.unit_size < 1) gen.unit_size = 1;
+        ImGui::SliderFloat("Bias", &gen.bias, 0.1f, 7.0f);
 
         ImGui::Separator();
 
