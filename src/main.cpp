@@ -16,9 +16,11 @@ class Example : public olc::PixelGameEngine
     const char* chunk_visualization_items[3]{"None", "Dots", "Lines"};
     int         chunk_visualization_current_item = 0;
 
-    // Threshold
-    bool  use_threshold = false;
-    float threshold     = 0.5f;
+    // "postprocessing"
+    const char* postprocessing_items[3]{"No post-processing", "Threshold", "Steps"};
+    int         postprocessing_current_item = 0;
+    float       threshold                   = 0.5f;
+    int         steps                       = 2;
 
 public:
     Example() { sAppName = "World Generation"; }
@@ -88,56 +90,69 @@ public:
                             = gen.world_to_screen(chunk_x + sub_x, chunk_y + sub_y);
                         auto value = vals[sub_y * gen.chunk_size + sub_x];
 
-                        if (!use_threshold)
+                        switch (postprocessing_current_item)
                         {
-                            FillRect(screen_x,
-                                     screen_y,
-                                     gen.unit_size,
-                                     gen.unit_size,
-                                     olc::Pixel(value * 255.0f, value * 255.0f, value * 255.0f));
-                        }
-                        else
-                        {
-                            if (value < threshold)
-                            {
+                            case 0:
+                                FillRect(
+                                    screen_x,
+                                    screen_y,
+                                    gen.unit_size,
+                                    gen.unit_size,
+                                    olc::Pixel(value * 255.0f, value * 255.0f, value * 255.0f));
+                                break;
+                            case 1:  // Threshold
+                                if (value < threshold)
+                                {
+                                    FillRect(screen_x,
+                                             screen_y,
+                                             gen.unit_size,
+                                             gen.unit_size,
+                                             olc::BLACK);
+                                }
+                                else
+                                {
+                                    FillRect(screen_x,
+                                             screen_y,
+                                             gen.unit_size,
+                                             gen.unit_size,
+                                             olc::WHITE);
+                                }
+                                break;
+                            case 2:  // steps
+                                float step = float(int(value * steps)) / steps;
                                 FillRect(screen_x,
                                          screen_y,
                                          gen.unit_size,
                                          gen.unit_size,
-                                         olc::BLACK);
-                            }
-                            else
-                            {
-                                FillRect(screen_x,
-                                         screen_y,
-                                         gen.unit_size,
-                                         gen.unit_size,
-                                         olc::WHITE);
-                            }
+                                         olc::Pixel(step * 255.0f, step * 255.0f, step * 255.0f));
+                                break;
                         }
                     }
                 }
+
+                // chunk visualization
                 auto [chunk_screen_x, chunk_screen_y] = gen.world_to_screen(chunk_x, chunk_y);
-                if (chunk_visualization_current_item == 1)
+                switch (chunk_visualization_current_item)
                 {
-                    FillRect(chunk_screen_x,
-                             chunk_screen_y,
-                             gen.unit_size,
-                             gen.unit_size,
-                             olc::RED);
-                }
-                else if (chunk_visualization_current_item == 2)
-                {
-                    DrawLine(chunk_screen_x,
-                             chunk_screen_y,
-                             chunk_screen_x,
-                             chunk_screen_y + gen.unit_size * gen.chunk_size,
-                             olc::RED);
-                    DrawLine(chunk_screen_x,
-                             chunk_screen_y,
-                             chunk_screen_x + gen.unit_size * gen.chunk_size,
-                             chunk_screen_y,
-                             olc::RED);
+                    case 1:
+                        FillRect(chunk_screen_x,
+                                 chunk_screen_y,
+                                 gen.unit_size,
+                                 gen.unit_size,
+                                 olc::RED);
+                        break;
+                    case 2:
+                        DrawLine(chunk_screen_x,
+                                 chunk_screen_y,
+                                 chunk_screen_x,
+                                 chunk_screen_y + gen.unit_size * gen.chunk_size,
+                                 olc::RED);
+                        DrawLine(chunk_screen_x,
+                                 chunk_screen_y,
+                                 chunk_screen_x + gen.unit_size * gen.chunk_size,
+                                 chunk_screen_y,
+                                 olc::RED);
+                        break;
                 }
             }
         }
@@ -258,8 +273,16 @@ public:
 
         ImGui::Separator();
 
-        ImGui::Checkbox("Use Threshold", &use_threshold);
-        ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f);
+        ImGui::Combo("", &postprocessing_current_item, postprocessing_items, 3);
+
+        switch (postprocessing_current_item)
+        {
+            case 1: ImGui::SliderFloat("##v", &threshold, 0.0f, 1.0f); break;
+            case 2:
+                ImGui::InputInt("##v", &steps);
+                if (steps < 2) steps = 2;
+                break;
+        }
 
         ImGui::Separator();
 
