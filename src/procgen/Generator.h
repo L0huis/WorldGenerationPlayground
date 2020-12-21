@@ -18,11 +18,12 @@ namespace procgen
         bool use_perlin = true;
 
         // general settings
-        int   world_seed = 0;
-        int   octaves    = 5;
-        int   chunk_size = 16;
-        int   unit_size  = 1;
-        float bias       = 2.0f;
+        int world_seed = 0;
+        int octaves    = 5;
+        int chunk_size = 16;
+        int unit_size  = 1;
+
+        std::vector<float> scales;
 
         // camera settings
         struct
@@ -30,6 +31,10 @@ namespace procgen
             float x = 0;
             float y = 0;
         } camera;
+
+        Generator();
+
+        void resize_scales_vector();
 
         // conversion functions
         [[nodiscard]] std::pair<float, float> world_to_screen(float x, float y) const noexcept;
@@ -43,7 +48,8 @@ namespace procgen
         [[nodiscard]] float perlin(int x, int y, int seed_offset = 0) const noexcept;
 
         // generating functions
-        [[nodiscard]] std::vector<float> generate_chunk(int chunk_x, int chunk_y, int seed_offset = 0);
+        [[nodiscard]] std::vector<float>
+        generate_chunk(int chunk_x, int chunk_y, int seed_offset = 0);
     };
 
 }  // namespace procgen

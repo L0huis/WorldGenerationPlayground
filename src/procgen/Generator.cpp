@@ -6,6 +6,25 @@
 
 #include <limits>
 
+procgen::Generator::Generator()
+    : scales(octaves)
+{
+    scales[0] = 1.0f;
+    for (int i = 1; i < scales.size(); i++) scales[i] = scales[i - 1] / 2.0f;
+}
+
+void procgen::Generator::resize_scales_vector()
+{
+    while (octaves < scales.size()) scales.pop_back();
+
+    if (octaves > scales.size())
+    {
+        auto prev_size = scales.size();
+        scales.resize(octaves);
+        for (auto i = prev_size; i < octaves; i++) scales[i] = scales[i - 1] / 2.0f;
+    }
+}
+
 std::pair<float, float> procgen::Generator::world_to_screen(float x, float y) const noexcept
 {
     return {
@@ -54,12 +73,6 @@ float procgen::Generator::random(int x, int y, int seed) const noexcept
 
 float procgen::Generator::perlin(int x, int y, int seed_offset) const noexcept
 {
-    // TODO: Chunks auf einmal generieren. So wiederholte berechnungen sparen.
-    //       Das Array quasi "vorberechen" und cachen.
-    //       Im Frontend dann chunk für chunk anstatt Reihe für Reihe rendern/laden.
-
-    // TODO: evtl. intrinsics;
-
     auto seed = world_seed + seed_offset;
 
     if (!use_perlin) return random(x, y, seed);
@@ -70,7 +83,6 @@ float procgen::Generator::perlin(int x, int y, int seed_offset) const noexcept
 
     float noise     = 0.0f;
     float scale_acc = 0.0f;
-    float scale     = 1.0f;
 
     for (int i = 0; (chunk_mask & 1) && (i < octaves); i++)
     {
@@ -94,23 +106,21 @@ float procgen::Generator::perlin(int x, int y, int seed_offset) const noexcept
         noise += lerp(lerp(rand_top_left, rand_bottom_left, normal_tile_y),
                       lerp(rand_top_right, rand_bottom_right, normal_tile_y),
                       normal_tile_x)
-                 * scale;
+                 * scales[i];
 
-        scale_acc += scale;
-        scale /= bias;
+        scale_acc += scales[i];
     }
 
     return noise / scale_acc;
 }
 
 void generate_chunk(const std::vector<float>& seed_values,
+                    const std::vector<float>& scales,
                     const int                 chunk_size,
                     int                       sub_chunk_size,
                     int                       x,
                     int                       y,
                     int                       octaves,
-                    float                     scale,
-                    float                     bias,
                     std::vector<float>&       result)
 {
     // not a 'safe' linear interpolation like `std::lerp` but we don't need any special case checking
@@ -126,7 +136,8 @@ void generate_chunk(const std::vector<float>& seed_values,
     // we can do 1 faster than the rest, since no interpolation is necessary
     if (sub_chunk_size == 1)
     {
-        result[y * chunk_size + x] += seed_values[y * chunk_size + x] * scale;
+        result[y * chunk_size + x]
+            += seed_values[y * chunk_size + x] * scales[scales.size() - octaves];
         return;
     }
 
@@ -148,48 +159,37 @@ void generate_chunk(const std::vector<float>& seed_values,
                 += lerp(lerp(top_left, bottom_left, normal_y),
                         lerp(top_right, bottom_right, normal_y),
                         normal_x)
-                   * scale;
+                   * scales[scales.size() - octaves];
         }
     }
 
     // call self for new 4 subchunks
     sub_chunk_size >>= 1;
 
+    generate_chunk(seed_values, scales, chunk_size, sub_chunk_size, x, y, octaves - 1, result);
     generate_chunk(seed_values,
-                   chunk_size,
-                   sub_chunk_size,
-                   x,
-                   y,
-                   octaves - 1,
-                   scale / bias,
-                   bias,
-                   result);
-    generate_chunk(seed_values,
+                   scales,
                    chunk_size,
                    sub_chunk_size,
                    x + sub_chunk_size,
                    y,
                    octaves - 1,
-                   scale / bias,
-                   bias,
                    result);
     generate_chunk(seed_values,
+                   scales,
                    chunk_size,
                    sub_chunk_size,
                    x,
                    y + sub_chunk_size,
                    octaves - 1,
-                   scale / bias,
-                   bias,
                    result);
     generate_chunk(seed_values,
+                   scales,
                    chunk_size,
                    sub_chunk_size,
                    x + sub_chunk_size,
                    y + sub_chunk_size,
                    octaves - 1,
-                   scale / bias,
-                   bias,
                    result);
 }
 
@@ -210,14 +210,13 @@ std::vector<float> procgen::Generator::generate_chunk(int chunk_x, int chunk_y, 
 
     float scale = 1.0f;
 
-    ::generate_chunk(random_values, chunk_size, chunk_size, 0, 0, octaves, scale, bias, result);
+    ::generate_chunk(random_values, scales, chunk_size, chunk_size, 0, 0, octaves, result);
 
     // scale_acc to normalize
     float scale_acc = 0.0f;
     for (int i = 0; i < octaves && chunk_size >> i > 0; i++)
     {
-        scale_acc += scale;
-        scale /= bias;
+        scale_acc += scales[i];
     }
 
     for (auto& v : result) v /= scale_acc;

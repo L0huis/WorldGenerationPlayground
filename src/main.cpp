@@ -232,9 +232,29 @@ public:
             prev_chunk_size = gen.chunk_size;
         }
         ImGui::InputInt("Octaves", &gen.octaves);
+        if (gen.octaves < 1) gen.octaves = 1;
+        gen.resize_scales_vector();
+
         ImGui::InputInt("Unit Size", &gen.unit_size);
         if (gen.unit_size < 1) gen.unit_size = 1;
-        ImGui::SliderFloat("Bias", &gen.bias, 0.1f, 7.0f);
+
+        ImGui::Separator();
+
+        // scales
+        ImGui::PushID("set1");
+        for (size_t i = 0; i < gen.scales.size(); i++)
+        {
+            if (i > 0) ImGui::SameLine();
+            ImGui::PushID(i);
+            ImGui::VSliderFloat("",
+                                ImVec2(50, 200),
+                                &gen.scales[i],
+                                0.0f,
+                                1.0f,
+                                "%.4f");  //, ImGuiSliderFlags_Logarithmic);
+            ImGui::PopID();
+        }
+        ImGui::PopID();
 
         ImGui::Separator();
 
