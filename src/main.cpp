@@ -5,7 +5,7 @@
 
 #include "procgen/Generator.h"
 
-class Example : public olc::PixelGameEngine
+class WorldGenerationPlayground : public olc::PixelGameEngine
 {
     olc::imgui::PGE_ImGUI pge_imgui;
     int                   gameLayer;
@@ -23,7 +23,7 @@ class Example : public olc::PixelGameEngine
     int         steps                       = 2;
 
 public:
-    Example() { sAppName = "World Generation"; }
+    WorldGenerationPlayground() { sAppName = "World Generation"; }
 
 public:
     bool OnUserCreate() override
@@ -44,7 +44,7 @@ public:
         EnableLayer(gameLayer, true);
         //Set a custom render function on layer 0.  Since DrawUI is a member of
         //our class, we need to use std::bind
-        SetLayerCustomRenderFunction(0, std::bind(&Example::DrawUI, this));
+        SetLayerCustomRenderFunction(0, std::bind(&WorldGenerationPlayground::DrawUI, this));
 
         gen.unit_size = 4;
 
@@ -298,7 +298,7 @@ public:
 };
 int main()
 {
-    Example demo;
+    WorldGenerationPlayground demo;
     if (demo.Construct(640, 370, 2, 2)) demo.Start();
     return 0;
 }
