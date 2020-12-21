@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-# Set the project name to your project name, my project isn't very descriptive
-project(myproject CXX)
+project(World-Generation CXX)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -57,9 +56,6 @@ if (ENABLE_PCH)
         <utility>
         <algorithm>)
 endif ()
-
-find_package(fmt CONFIG REQUIRED)
-find_package(docopt CONFIG REQUIRED)
 
 find_package(catch2 CONFIG REQUIRED)
 
